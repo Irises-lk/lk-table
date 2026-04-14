@@ -57,6 +57,20 @@
         >
       </details>
 
+      <details class="word-tags">
+        <summary>业绩台账表格模板写法（固定8行手动占位符）</summary>
+        <p class="rules-tip">
+          中文注释：按固定 8 行写占位符，不使用循环；字段对应 G 到 AB 共 22 列。
+        </p>
+        <pre class="preview-value">
+示例：第1行占位符
+{ledgerRawR1G}{ledgerRawR1H}{ledgerRawR1I}...{ledgerRawR1AB}
+
+示例：第8行占位符
+{ledgerRawR8G}{ledgerRawR8H}{ledgerRawR8I}...{ledgerRawR8AB}</pre
+        >
+      </details>
+
       <details class="word-preview">
         <summary>占位符内容预览</summary>
         <p class="rules-tip">
@@ -90,7 +104,17 @@
               :placeholder="item.placeholder"
             />
           </div>
+        
         </div>
+          <div class="rule-item">
+            <label for="rule-ledger-rows">业绩台账指定行号（固定读取）</label>
+            <input
+              id="rule-ledger-rows"
+              v-model="editableRules.ledgerRawTargetRows"
+              type="text"
+              placeholder="例如：6,10,11,14,17,18,19,20"
+            />
+          </div>
         <div class="rules-actions">
           <button type="button" @click="resetRules">恢复默认规则</button>
         </div>
@@ -109,6 +133,15 @@
         :external-file="matchedFiles.ledger"
         :generate-key="generateKey"
         :hide-uploader="true"
+      />
+    </section>
+
+    <section class="page-block">
+      <LedgerRawTableViewer
+        :external-file="matchedFiles.ledger"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+        :target-rows-text="editableRules.ledgerRawTargetRows"
       />
     </section>
 
@@ -213,6 +246,7 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import NextMonthForecastSummary from "./components/NextMonthForecastSummary.vue";
 import LedgerReportGenerator from "./components/LedgerReportGenerator.vue";
+import LedgerRawTableViewer from "./components/LedgerRawTableViewer.vue";
 import OverdueReceiptMonthlyReport from "./components/OverdueReceiptMonthlyReport.vue";
 import EastRegionOverdueStock from "./components/EastRegionOverdueStock.vue";
 import EastRegionNewOverdue from "./components/EastRegionNewOverdue.vue";
@@ -229,6 +263,10 @@ const selectedFiles = ref([]);
 const generateKey = ref(0);
 const RULE_STORAGE_KEY = "lkgzl_rule_editor_v1";
 const LOCAL_WORD_TEMPLATE_URL = new URL("./template/华东区域经营月报模板.docx", import.meta.url).href;
+const LEDGER_FIXED_ROW_COUNT = 8;
+const LEDGER_RAW_COL_LETTERS = [
+  "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA", "AB"
+];
 const store = useStore();
 const wordStatus = ref("");
 
@@ -254,6 +292,8 @@ const wordTagList = [
   "inHandThreeSheetNewSignRows",
   "inHandThreeSheetRevenueRows",
   "inHandThreeSheetReceiptRows",
+  "ledgerRawTableText",
+  ...buildLedgerRawFixedTagList(),
   // 'competitorAnalysisText',
   // 'excelParserText'
 ];
@@ -313,6 +353,7 @@ const defaultEditableRules = {
   forecast: "月份预计指标表\n预计指标表",
   competitor: "竞争对手经营承揽情况",
   ledger: "业绩台账",
+  ledgerRawTargetRows: "6,10,11,14,17,18,19,20",
   stockOverdue: "存量逾期",
   newOverdue: "新增逾期",
   inHand: "在手合同台账\n在手合同",
@@ -517,6 +558,9 @@ function buildWordData() {
     revenueRows: [],
     receiptRows: [],
   };
+  const ledgerRawRows = Array.isArray(state.ledgerRawTableResult?.tableRows)
+    ? state.ledgerRawTableResult.tableRows
+    : [];
 
   const newSignText = buildThreeSheetSectionText(
     "新签数据",
@@ -557,6 +601,8 @@ function buildWordData() {
     inHandThreeSheetNewSignRows: buildWordRows(threeSheetData.newSignRows),
     inHandThreeSheetRevenueRows: buildWordRows(threeSheetData.revenueRows),
     inHandThreeSheetReceiptRows: buildWordRows(threeSheetData.receiptRows),
+    ledgerRawTableText: buildLedgerRawTableText(ledgerRawRows),
+    ...buildLedgerRawFixedData(ledgerRawRows),
     // competitorAnalysisText: state.competitorAnalysisResult?.resultText || '',
     // excelParserText: state.excelParserResult?.message || ''
   };
@@ -573,6 +619,65 @@ function buildWordRows(rows) {
     product: String(row.product == null ? "" : row.product),
     amount: String(row.amount == null ? "" : row.amount),
   }));
+}
+
+function buildLedgerRawFixedTagList() {
+  const tags = [];
+  for (let row = 1; row <= LEDGER_FIXED_ROW_COUNT; row += 1) {
+    for (const col of LEDGER_RAW_COL_LETTERS) {
+      tags.push(`ledgerRawR${row}${col}`);
+    }
+  }
+  return tags;
+}
+
+function buildLedgerRawFixedData(rows) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const result = {};
+
+  // 中文注释：固定输出8行占位符，不足行或空值统一补空字符串。
+  for (let row = 1; row <= LEDGER_FIXED_ROW_COUNT; row += 1) {
+    const current = Array.isArray(safeRows[row - 1]) ? safeRows[row - 1] : [];
+    for (let colIndex = 0; colIndex < LEDGER_RAW_COL_LETTERS.length; colIndex += 1) {
+      const col = LEDGER_RAW_COL_LETTERS[colIndex];
+      result[`ledgerRawR${row}${col}`] = String(current[colIndex] == null ? "" : current[colIndex]);
+    }
+  }
+
+  return result;
+}
+
+function buildLedgerRawTableText(rows) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  if (!safeRows.length) return "";
+
+  const header = [];
+  for (let col = 6; col <= 27; col += 1) {
+    header.push(columnIndexToExcelLetter(col));
+  }
+
+  const lines = [header.join("\t")];
+  for (const row of safeRows) {
+    const normalized = Array.isArray(row) ? row : [];
+    const line = [];
+    for (let col = 0; col < 22; col += 1) {
+      line.push(String(normalized[col] == null ? "" : normalized[col]));
+    }
+    lines.push(line.join("\t"));
+  }
+
+  return lines.join("\n");
+}
+
+function columnIndexToExcelLetter(index) {
+  let num = index + 1;
+  let letter = "";
+  while (num > 0) {
+    const mod = (num - 1) % 26;
+    letter = String.fromCharCode(65 + mod) + letter;
+    num = Math.floor((num - mod) / 26);
+  }
+  return letter;
 }
 
 function formatWordPreviewValue(value) {
@@ -815,9 +920,18 @@ function formatDateCompact(date) {
 }
 
 .rule-item textarea {
-  width: 100%;
+  width: 90%;
   resize: vertical;
   min-height: 56px;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.rule-item input {
+  width: 300px;
   padding: 8px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;

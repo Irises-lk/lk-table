@@ -15,7 +15,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 
-const INITIAL_OVERDUE = 8136
+const DEFAULT_INITIAL_OVERDUE = 8136
 const props = defineProps({
   autoBuildKey: { type: Number, default: 0 }
 })
@@ -67,15 +67,21 @@ function collectSourceValues(showAlertWhenMissing) {
   const completedText = store.state.overdueReceiptMonthlyResult?.resultText || ''
   const stockText = store.state.eastRegionOverdueStockResult?.resultText || ''
   const newText = store.state.eastRegionNewOverdueResult?.resultText || ''
+  const stockRawAmount = store.state.eastRegionOverdueStockResult?.rawAmount
+  const newRawAmount = store.state.eastRegionNewOverdueResult?.rawAmount
+  const initialOverdueRaw = store.state.eastRegionOverdueStockResult?.initialOverdue
 
   const cc = extractFirstNumber(completedText)
-  const stock = extractFirstNumber(stockText)
-  const added = extractFirstNumber(newText)
+  // 中文注释：优先使用结构化数值，避免从文本抽数引入精度或匹配误差。
+  const stock = Number.isFinite(stockRawAmount) ? Number(stockRawAmount) : extractAmountValue(stockText)
+  const added = Number.isFinite(newRawAmount) ? Number(newRawAmount) : extractAmountValue(newText)
+  const initialOverdue = Number.isFinite(initialOverdueRaw) ? Number(initialOverdueRaw) : DEFAULT_INITIAL_OVERDUE
 
   const missingPages = []
   if (Number.isNaN(cc)) missingPages.push('完成逾期')
   if (Number.isNaN(stock)) missingPages.push('存量逾期')
   if (Number.isNaN(added)) missingPages.push('新增逾期')
+  if (Number.isNaN(initialOverdue) || initialOverdue === 0) missingPages.push('期初逾期')
 
   if (missingPages.length) {
     if (showAlertWhenMissing) {
@@ -85,20 +91,29 @@ function collectSourceValues(showAlertWhenMissing) {
     return null
   }
 
-  return { cc, stock, added }
+  return { cc, stock, added, initialOverdue }
 }
 
 function composeText(values) {
-  const aa = roundHalfUp(values.stock + values.added)
-  const bb = roundHalfUp(INITIAL_OVERDUE - aa)
-  const rate = (INITIAL_OVERDUE - aa) / INITIAL_OVERDUE
+  // 中文注释：百分比应基于原始小数值计算，避免先取整导致精度丢失。
+  const currentOverdueRaw = values.stock + values.added
+  const initialOverdue = values.initialOverdue
+  console.log('values',values);
+  
+console.log('initialOverdue',initialOverdue);
+
+  const aa = roundHalfUp(currentOverdueRaw)
+  const bb = roundHalfUp(initialOverdue - currentOverdueRaw)
+
+  const rate = (initialOverdue - currentOverdueRaw) / initialOverdue
   const percentText = `${roundHalfUp(Math.abs(rate * 100), 2).toFixed(2)}%`
 
   const descBb = bb >= 0 ? `较期初下降${Math.abs(bb)}万元` : `较期初增长${Math.abs(bb)}万元`
   const descXx = rate >= 0 ? `下降${percentText}` : `增长${percentText}`
   const cc = roundHalfUp(values.cc)
+  const initialDisplay = roundHalfUp(initialOverdue)
 
-  return `（四）逾期压降：期初逾期8136万元，当前逾期${aa}万元, ${descBb}, ${descXx}，本月完成逾期回款${cc}万元。`
+  return `（四）逾期压降：期初逾期${initialDisplay}万元，当前逾期${aa}万元, ${descBb}, ${descXx}，本月完成逾期回款${cc}万元。`
 }
 
 function extractFirstNumber(text) {
@@ -107,6 +122,18 @@ function extractFirstNumber(text) {
   if (!match) return NaN
   const num = Number.parseFloat(match[0])
   return Number.isNaN(num) ? NaN : num
+}
+
+function extractAmountValue(text) {
+  const raw = String(text == null ? '' : text)
+  // 中文注释：优先匹配“为 xxx 万元”这种主值片段，避免匹配到句子中的其他数字。
+  const amountMatch = raw.match(/为\s*(-?\d+(?:\.\d+)?)\s*万元/)
+  if (amountMatch) {
+    const amount = Number.parseFloat(amountMatch[1])
+    if (!Number.isNaN(amount)) return amount
+  }
+
+  return extractFirstNumber(raw)
 }
 
 function roundHalfUp(value, decimals = 0) {

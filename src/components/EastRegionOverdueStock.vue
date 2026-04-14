@@ -20,10 +20,13 @@ import * as XLSX from 'xlsx'
 const REQUIRED_SHEETS = ['汇总表', '华东区域指挥部主办逾期', '华东区域指挥部协办逾期']
 const TARGET_ROW_TITLE = '华东区域指挥部合计'
 const TARGET_COL_TITLE = '合计金额'
+const TARGET_INITIAL_COL_TITLE = '期初逾期'
 
 const store = useStore()
 const resultText = ref(store.state.eastRegionOverdueStockResult.resultText || '')
 const errorText = ref(store.state.eastRegionOverdueStockResult.errorText || '')
+const rawAmount = ref(store.state.eastRegionOverdueStockResult.rawAmount)
+const initialOverdue = ref(store.state.eastRegionOverdueStockResult.initialOverdue)
 const props = defineProps({
   externalFile: { type: Object, default: null },
   generateKey: { type: Number, default: 0 },
@@ -31,10 +34,12 @@ const props = defineProps({
 })
 
 // 中文注释：把页面展示结果持久化到 Vuex，避免路由切换或刷新后丢失。
-watch([resultText, errorText], () => {
+watch([resultText, errorText, rawAmount, initialOverdue], () => {
   store.commit('setEastRegionOverdueStockResult', {
     resultText: resultText.value,
-    errorText: errorText.value
+    errorText: errorText.value,
+    rawAmount: rawAmount.value,
+    initialOverdue: initialOverdue.value
   })
 })
 
@@ -52,6 +57,8 @@ function onFileChange(event) {
 
   resultText.value = ''
   errorText.value = ''
+  rawAmount.value = null
+  initialOverdue.value = null
 
   const reader = new FileReader()
   reader.onload = (ev) => {
@@ -85,9 +92,21 @@ function onFileChange(event) {
         return
       }
 
-      // 中文注释：读取交叉单元格时优先保留 Excel 显示值（含百分号等格式）。
-      const rawDisplayValue = getCellDisplayValue(worksheet, rows, targetRowIndex, amountColIndex)
-      const decimalValue = toDecimal(rawDisplayValue)
+      const initialColIndex = findColumnIndex(rows, targetRowIndex, TARGET_INITIAL_COL_TITLE)
+      if (initialColIndex === -1) {
+        errorText.value = '未找到“期初逾期”列。'
+        return
+      }
+
+      // 中文注释：优先读取单元格原始值，避免被Excel显示格式（如隐藏小数位）截断。
+      const rawValue = getCellRawValue(worksheet, rows, targetRowIndex, amountColIndex)
+      const decimalValue = toActualNumberText(rawValue)
+      rawAmount.value = parseActualNumber(rawValue)
+
+      // 中文注释：同步读取“期初逾期”原始值，供逾期压降汇总动态使用。
+      const initialRawValue = getCellRawValue(worksheet, rows, targetRowIndex, initialColIndex)
+      initialOverdue.value = parseActualNumber(initialRawValue)
+
       resultText.value = `华东区域指挥部当前存量逾期为 ${decimalValue} 万元`
     } catch (error) {
       errorText.value = `解析失败：${error && error.message ? error.message : String(error)}`
@@ -135,15 +154,17 @@ function findColumnIndex(rows, rowIndex, title) {
   return -1
 }
 
-function getCellDisplayValue(worksheet, rows, rowIndex, colIndex) {
+function getCellRawValue(worksheet, rows, rowIndex, colIndex) {
   if (colIndex < 0) return ''
 
   const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex })
   const cell = worksheet ? worksheet[cellAddress] : null
   if (cell) {
+    // 中文注释：优先返回原始值 cell.v，确保保留完整精度。
+    if (cell.v != null && normalizeCellText(cell.v) !== '') return cell.v
+
     const shown = XLSX.utils.format_cell(cell)
     if (shown != null && normalizeCellText(shown) !== '') return shown
-    if (cell.v != null) return cell.v
   }
 
   const row = rows[rowIndex] || []
@@ -154,17 +175,28 @@ function normalizeCellText(value) {
   return String(value == null ? '' : value).replace(/\r?\n/g, '').trim()
 }
 
-function toDecimal(value) {
-  if (typeof value === 'number') return value.toFixed(2)
+function toActualNumberText(value) {
+  if (typeof value === 'number') return String(value)
 
   const text = normalizeCellText(value)
-  if (!text) return '0.00'
+  if (!text) return '0'
 
   const cleaned = text.replace(/,/g, '').replace(/[^0-9.\-]/g, '')
   const numericValue = Number.parseFloat(cleaned)
-  if (Number.isNaN(numericValue)) return '0.00'
+  if (Number.isNaN(numericValue)) return text
 
-  return numericValue.toFixed(2)
+  return String(numericValue)
+}
+
+function parseActualNumber(value) {
+  if (typeof value === 'number') return value
+
+  const text = normalizeCellText(value)
+  if (!text) return NaN
+
+  const cleaned = text.replace(/,/g, '').replace(/[^0-9.\-]/g, '')
+  const numericValue = Number.parseFloat(cleaned)
+  return Number.isNaN(numericValue) ? NaN : numericValue
 }
 </script>
 

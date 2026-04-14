@@ -24,6 +24,7 @@ const TARGET_COL_TITLE = '合计金额'
 const store = useStore()
 const resultText = ref(store.state.eastRegionNewOverdueResult.resultText || '')
 const errorText = ref(store.state.eastRegionNewOverdueResult.errorText || '')
+const rawAmount = ref(store.state.eastRegionNewOverdueResult.rawAmount)
 const props = defineProps({
   externalFile: { type: Object, default: null },
   generateKey: { type: Number, default: 0 },
@@ -34,7 +35,8 @@ const props = defineProps({
 watch([resultText, errorText], () => {
   store.commit('setEastRegionNewOverdueResult', {
     resultText: resultText.value,
-    errorText: errorText.value
+    errorText: errorText.value,
+    rawAmount: rawAmount.value
   })
 })
 
@@ -52,6 +54,7 @@ function onFileChange(event) {
 
   resultText.value = ''
   errorText.value = ''
+  rawAmount.value = null
 
   const reader = new FileReader()
   reader.onload = (ev) => {
@@ -86,9 +89,10 @@ function onFileChange(event) {
         return
       }
 
-      // 中文注释：优先读取 Excel 格式化显示值，保证百分号等显示格式可原样保留。
-      const rawDisplayValue = getCellDisplayValue(worksheet, rows, targetRowIndex, amountColIndex)
-      const decimalValue = toDecimal(rawDisplayValue)
+      // 中文注释：优先读取单元格原始值，避免显示格式隐藏小数造成精度丢失。
+      const rawValue = getCellRawValue(worksheet, rows, targetRowIndex, amountColIndex)
+      const decimalValue = toActualNumberText(rawValue)
+      rawAmount.value = parseActualNumber(rawValue)
 
       // 中文注释：按需求仅输出指定句子，不追加其他业务文本。
       resultText.value = `华东区域指挥部当前新增逾期为 ${decimalValue} 万元`
@@ -138,15 +142,17 @@ function findColumnIndex(rows, rowIndex, title) {
   return -1
 }
 
-function getCellDisplayValue(worksheet, rows, rowIndex, colIndex) {
+function getCellRawValue(worksheet, rows, rowIndex, colIndex) {
   if (colIndex < 0) return ''
 
   const cellAddress = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex })
   const cell = worksheet ? worksheet[cellAddress] : null
   if (cell) {
+    // 中文注释：优先返回原始值 cell.v，确保保留完整精度。
+    if (cell.v != null && normalizeCellText(cell.v) !== '') return cell.v
+
     const shown = XLSX.utils.format_cell(cell)
     if (shown != null && normalizeCellText(shown) !== '') return shown
-    if (cell.v != null) return cell.v
   }
 
   const row = rows[rowIndex] || []
@@ -157,17 +163,28 @@ function normalizeCellText(value) {
   return String(value == null ? '' : value).replace(/\r?\n/g, '').trim()
 }
 
-function toDecimal(value) {
-  if (typeof value === 'number') return value.toFixed(2)
+function toActualNumberText(value) {
+  if (typeof value === 'number') return String(value)
 
   const text = normalizeCellText(value)
-  if (!text) return '0.00'
+  if (!text) return '0'
 
   const cleaned = text.replace(/,/g, '').replace(/[^0-9.\-]/g, '')
   const numericValue = Number.parseFloat(cleaned)
-  if (Number.isNaN(numericValue)) return '0.00'
+  if (Number.isNaN(numericValue)) return text
 
-  return numericValue.toFixed(2)
+  return String(numericValue)
+}
+
+function parseActualNumber(value) {
+  if (typeof value === 'number') return value
+
+  const text = normalizeCellText(value)
+  if (!text) return NaN
+
+  const cleaned = text.replace(/,/g, '').replace(/[^0-9.\-]/g, '')
+  const numericValue = Number.parseFloat(cleaned)
+  return Number.isNaN(numericValue) ? NaN : numericValue
 }
 </script>
 

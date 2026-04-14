@@ -23,8 +23,8 @@ const store = createStore({
       competitorAnalysisResult: persisted.competitorAnalysisResult || { resultText: '', details: {} },
       ledgerReportResult: persisted.ledgerReportResult || { statusText: '', sheetRecognition: {}, rowData: null, resultText: '' },
       overdueReceiptMonthlyResult: persisted.overdueReceiptMonthlyResult || { statusText: '', sheetRecognition: {}, resultText: '' },
-      eastRegionOverdueStockResult: persisted.eastRegionOverdueStockResult || { resultText: '', errorText: '' },
-      eastRegionNewOverdueResult: persisted.eastRegionNewOverdueResult || { resultText: '', errorText: '' },
+      eastRegionOverdueStockResult: persisted.eastRegionOverdueStockResult || { resultText: '', errorText: '', rawAmount: null, initialOverdue: null },
+      eastRegionNewOverdueResult: persisted.eastRegionNewOverdueResult || { resultText: '', errorText: '', rawAmount: null },
       overdueCompressionSummaryResult: persisted.overdueCompressionSummaryResult || { resultText: '' },
       mainInHandContractAmountResult: persisted.mainInHandContractAmountResult || { resultText: '', errorText: '' },
       projectTrackingSummaryResult: persisted.projectTrackingSummaryResult || { resultText: '', errorText: '' },
@@ -33,6 +33,7 @@ const store = createStore({
       outboundProjectFollowupResult: persisted.outboundProjectFollowupResult || { resultText: '', errorText: '' },
       competitorAnalysisStrictResult: persisted.competitorAnalysisStrictResult || { resultText: '', errorText: '' },
       nextMonthForecastResult: persisted.nextMonthForecastResult || { resultText: '', errorText: '' },
+      ledgerRawTableResult: persisted.ledgerRawTableResult || { statusText: '', errorText: '', tableRows: [] },
       inHandThreeSheetTableResult: persisted.inHandThreeSheetTableResult || {
         statusText: '',
         errorText: '',
@@ -71,13 +72,16 @@ const store = createStore({
     setEastRegionOverdueStockResult(state, payload) {
       state.eastRegionOverdueStockResult = {
         resultText: payload && payload.resultText ? payload.resultText : '',
-        errorText: payload && payload.errorText ? payload.errorText : ''
+        errorText: payload && payload.errorText ? payload.errorText : '',
+        rawAmount: payload && Number.isFinite(payload.rawAmount) ? payload.rawAmount : null,
+        initialOverdue: payload && Number.isFinite(payload.initialOverdue) ? payload.initialOverdue : null
       }
     },
     setEastRegionNewOverdueResult(state, payload) {
       state.eastRegionNewOverdueResult = {
         resultText: payload && payload.resultText ? payload.resultText : '',
-        errorText: payload && payload.errorText ? payload.errorText : ''
+        errorText: payload && payload.errorText ? payload.errorText : '',
+        rawAmount: payload && Number.isFinite(payload.rawAmount) ? payload.rawAmount : null
       }
     },
     setOverdueCompressionSummaryResult(state, payload) {
@@ -127,6 +131,13 @@ const store = createStore({
         errorText: payload && payload.errorText ? payload.errorText : ''
       }
     },
+    setLedgerRawTableResult(state, payload) {
+      state.ledgerRawTableResult = {
+        statusText: payload && payload.statusText ? payload.statusText : '',
+        errorText: payload && payload.errorText ? payload.errorText : '',
+        tableRows: payload && Array.isArray(payload.tableRows) ? payload.tableRows : []
+      }
+    },
     setInHandThreeSheetTableResult(state, payload) {
       state.inHandThreeSheetTableResult = {
         statusText: payload && payload.statusText ? payload.statusText : '',
@@ -156,6 +167,7 @@ store.subscribe((_mutation, state) => {
     outboundProjectFollowupResult: state.outboundProjectFollowupResult,
     competitorAnalysisStrictResult: state.competitorAnalysisStrictResult,
     nextMonthForecastResult: state.nextMonthForecastResult,
+    ledgerRawTableResult: state.ledgerRawTableResult,
     inHandThreeSheetTableResult: state.inHandThreeSheetTableResult
   }
 
