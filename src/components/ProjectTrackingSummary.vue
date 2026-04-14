@@ -2,7 +2,7 @@
   <section class="tracking-page">
     <h3>信息跟踪阶段统计</h3>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="trackingFile">上传 Excel 文件：</label>
       <input id="trackingFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
@@ -23,6 +23,11 @@ const REQUIRED_COLUMNS = ['取消跟进原因', '项目名称', '最后修改时
 const store = useStore()
 const resultText = ref(store.state.projectTrackingSummaryResult?.resultText || '')
 const errorText = ref(store.state.projectTrackingSummaryResult?.errorText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 watch([resultText, errorText], () => {
   store.commit('setProjectTrackingSummaryResult', {
@@ -30,6 +35,14 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
+)
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]

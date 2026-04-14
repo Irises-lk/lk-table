@@ -2,7 +2,7 @@
   <section class="main-in-hand-page">
     <h3>在手主办未拆分项目可执行合同总额</h3>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="mainInHandFile">上传 Excel 文件：</label>
       <input id="mainInHandFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
@@ -27,6 +27,11 @@ const TARGET_HEADER_ROW_INDEX = 2
 const store = useStore()
 const resultText = ref(store.state.mainInHandContractAmountResult?.resultText || '')
 const errorText = ref(store.state.mainInHandContractAmountResult?.errorText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 watch([resultText, errorText], () => {
   store.commit('setMainInHandContractAmountResult', {
@@ -34,6 +39,14 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
+)
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]

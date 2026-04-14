@@ -1,37 +1,14 @@
 <template>
   <section class="ledger-page">
     <h3>业绩台账文本生成</h3>
-    <p class="desc">上传 Excel 后，仅解析“业绩台账”工作表，并定位“华东区域指挥部总计”行生成业务文本。</p>
-
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="excelFile">上传 Excel 文件：</label>
       <input id="excelFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
 
-    <div v-if="statusText" class="panel">
-      <strong>识别状态：</strong>
-      <div class="content">{{ statusText }}</div>
-      <ul>
-        <li v-for="(v, k) in sheetRecognition" :key="k">{{ k }}：{{ v }}</li>
-      </ul>
-    </div>
-
-    <!-- <div v-if="rowData" class="panel">
-      <strong>提取数据：</strong>
-      <table class="data-table">
-        <tbody>
-          <tr v-for="(v, k) in rowData" :key="k">
-            <td>{{ k }}</td>
-            <td>{{ v }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div> -->
-
-    <div v-if="resultText" class="panel">
-      <strong>结果：</strong>
+    <div v-if="resultText" class="result-panel">
       <div class="content text-block">{{ resultText }}</div>
-      <button @click="exportTxt">导出为 TXT</button>
+      <!-- <button @click="exportTxt">导出为 TXT</button> -->
     </div>
   </section>
 </template>
@@ -65,6 +42,11 @@ const statusText = ref(store.state.ledgerReportResult.statusText || '')
 const sheetRecognition = ref(store.state.ledgerReportResult.sheetRecognition || {})
 const rowData = ref(store.state.ledgerReportResult.rowData || null)
 const resultText = ref(store.state.ledgerReportResult.resultText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 // 中文注释：统一把页面结果写入 Vuex，持久化后刷新或切路由仍可展示。
 watch(
@@ -78,6 +60,15 @@ watch(
     })
   },
   { deep: true }
+)
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    // 中文注释：生成按钮触发时由父组件注入文件并开始解析。
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
 )
 
 function onFileChange(e) {

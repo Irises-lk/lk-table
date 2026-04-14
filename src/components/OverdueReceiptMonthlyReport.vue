@@ -5,21 +5,12 @@
       上传 Excel 后，系统会识别“新签/营收/回款/业绩台账”四个子表，但仅处理“回款”子表。
     </p>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="overdueFile">上传 Excel 文件：</label>
       <input id="overdueFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
 
-    <div v-if="statusText" class="panel">
-      <strong>识别状态：</strong>
-      <div class="content">{{ statusText }}</div>
-      <ul>
-        <li v-for="(v, k) in sheetRecognition" :key="k">{{ k }}：{{ v }}</li>
-      </ul>
-    </div>
-
-    <div v-if="resultText" class="panel">
-      <strong>结果：</strong>
+    <div v-if="resultText" class="result-panel">
       <div class="content result-only">{{ resultText }}</div>
     </div>
   </section>
@@ -40,6 +31,11 @@ const store = useStore()
 const statusText = ref(store.state.overdueReceiptMonthlyResult.statusText || '')
 const sheetRecognition = ref(store.state.overdueReceiptMonthlyResult.sheetRecognition || {})
 const resultText = ref(store.state.overdueReceiptMonthlyResult.resultText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 // 中文注释：将计算状态与结果同步到 Vuex，保证刷新后仍能回显。
 watch(
@@ -52,6 +48,15 @@ watch(
     })
   },
   { deep: true }
+)
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    // 中文注释：父组件统一上传后，按生成信号触发本模块计算。
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
 )
 
 function onFileChange(event) {

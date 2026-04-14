@@ -1,7 +1,7 @@
 <template>
   <section class="new-overdue-page">
     <h3>华东区域指挥部新增逾期</h3>
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="newOverdueFile">上传 Excel 文件：</label>
       <input id="newOverdueFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
@@ -24,6 +24,11 @@ const TARGET_COL_TITLE = '合计金额'
 const store = useStore()
 const resultText = ref(store.state.eastRegionNewOverdueResult.resultText || '')
 const errorText = ref(store.state.eastRegionNewOverdueResult.errorText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 // 中文注释：结果变化后写入 Vuex，确保页面刷新后仍展示最近一次计算值。
 watch([resultText, errorText], () => {
@@ -32,6 +37,14 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
+)
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]

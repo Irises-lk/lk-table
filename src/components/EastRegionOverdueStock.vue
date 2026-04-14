@@ -1,7 +1,7 @@
 <template>
   <section class="stock-page">
     <h3>华东区域指挥部存量逾期</h3>
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="stockFile">上传 Excel 文件：</label>
       <input id="stockFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
@@ -24,6 +24,11 @@ const TARGET_COL_TITLE = '合计金额'
 const store = useStore()
 const resultText = ref(store.state.eastRegionOverdueStockResult.resultText || '')
 const errorText = ref(store.state.eastRegionOverdueStockResult.errorText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 // 中文注释：把页面展示结果持久化到 Vuex，避免路由切换或刷新后丢失。
 watch([resultText, errorText], () => {
@@ -32,6 +37,14 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
+)
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]

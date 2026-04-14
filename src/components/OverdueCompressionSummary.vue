@@ -2,9 +2,9 @@
   <section class="summary-page">
     <h3>逾期压降汇总</h3>
 
-    <div class="actions">
+    <!-- <div class="actions">
       <button @click="buildSummary">获取并计算</button>
-    </div>
+    </div> -->
 
     <div v-if="resultText" class="result-panel">{{ resultText }}</div>
   </section>
@@ -12,10 +12,13 @@
 
 <script setup>
 // 中文注释：本页面仅读取 Vuex 中三个页面的现有结果，不重复解析 Excel。
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useStore } from 'vuex'
 
 const INITIAL_OVERDUE = 8136
+const props = defineProps({
+  autoBuildKey: { type: Number, default: 0 }
+})
 
 const store = useStore()
 const resultText = ref(store.state.overdueCompressionSummaryResult?.resultText || '')
@@ -35,6 +38,29 @@ function buildSummary() {
 
   resultText.value = composeText(values)
   persistResult()
+}
+
+watch(
+  () => props.autoBuildKey,
+  () => {
+    if (!props.autoBuildKey) return
+    // 中文注释：统一生成后延迟轮询，确保依赖页面先完成异步解析再汇总。
+    tryAutoBuild(0)
+  }
+)
+
+function tryAutoBuild(retryCount) {
+  const values = collectSourceValues(false)
+  if (values) {
+    resultText.value = composeText(values)
+    persistResult()
+    return
+  }
+
+  if (retryCount >= 100) return
+  window.setTimeout(() => {
+    tryAutoBuild(retryCount + 1)
+  }, 120)
 }
 
 function collectSourceValues(showAlertWhenMissing) {

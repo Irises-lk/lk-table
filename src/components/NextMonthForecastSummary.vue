@@ -2,7 +2,7 @@
   <section class="forecast-page">
     <h3>次月指标预计汇总</h3>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="forecastFile">上传 Excel 文件：</label>
       <input id="forecastFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
@@ -23,6 +23,11 @@ const SHEET_KEYS = ['新签', '营收', '回款']
 const store = useStore()
 const resultText = ref(store.state.nextMonthForecastResult?.resultText || '')
 const errorText = ref(store.state.nextMonthForecastResult?.errorText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 watch([resultText, errorText], () => {
   store.commit('setNextMonthForecastResult', {
@@ -30,6 +35,15 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    // 中文注释：统一用虚拟 change 事件复用原有解析逻辑。
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
+)
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]

@@ -2,7 +2,7 @@
   <section class="stage-page">
     <h3>三阶段项目动态统计</h3>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="stageFile">上传 Excel 文件：</label>
       <input id="stageFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
@@ -24,6 +24,11 @@ const REQUIRED_COLUMNS = ['项目名称', '项目动态']
 const store = useStore()
 const resultText = ref(store.state.stageDynamicsSummaryResult?.resultText || '')
 const errorText = ref(store.state.stageDynamicsSummaryResult?.errorText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 watch([resultText, errorText], () => {
   store.commit('setStageDynamicsSummaryResult', {
@@ -31,6 +36,14 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
+)
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]

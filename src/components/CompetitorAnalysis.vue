@@ -1,8 +1,10 @@
 <template>
   <div>
     <h3>竞争对手承揽统计与分析</h3>
-    <label>上传 Excel 文件（含子表：掘进机、特装装备）：</label>
-    <input type="file" accept=".xlsx,.xls" @change="onFileChange" />
+    <template v-if="!hideUploader">
+      <label>上传 Excel 文件（含子表：掘进机、特装装备）：</label>
+      <input type="file" accept=".xlsx,.xls" @change="onFileChange" />
+    </template>
 
     <div v-if="resultText" style="margin-top:12px;padding:12px;border:1px solid #ddd;background:#fafafa;">
       <strong>输出文案：</strong>
@@ -27,6 +29,11 @@ import * as XLSX from 'xlsx'
 const store = useStore()
 const resultText = ref(store.state.competitorAnalysisResult.resultText || '')
 const details = ref(store.state.competitorAnalysisResult.details || {})
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 // 中文注释：计算结果变化时同步到 Vuex，确保跨路由与刷新后可回显。
 watch(
@@ -38,6 +45,15 @@ watch(
     })
   },
   { deep: true }
+)
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    // 中文注释：复用既有 onFileChange，避免改动核心统计逻辑。
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
 )
 
 // 触发点为当前日期，统计上一个月

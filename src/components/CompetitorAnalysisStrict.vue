@@ -2,7 +2,7 @@
   <section class="strict-page">
     <h3>竞争对手承揽统计（严格版）</h3>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="strictFile">上传 Excel 文件：</label>
       <input id="strictFile" type="file" accept=".xlsx,.xls" @change="onFileChange" />
     </div>
@@ -23,6 +23,11 @@ const SHEET_KEYS = ['掘进机', '特种装备']
 const store = useStore()
 const resultText = ref(store.state.competitorAnalysisStrictResult?.resultText || '')
 const errorText = ref(store.state.competitorAnalysisStrictResult?.errorText || '')
+const props = defineProps({
+  externalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 watch([resultText, errorText], () => {
   store.commit('setCompetitorAnalysisStrictResult', {
@@ -30,6 +35,14 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.externalFile) return
+    onFileChange({ target: { files: [props.externalFile] } })
+  }
+)
 
 function onFileChange(event) {
   const file = event.target.files && event.target.files[0]

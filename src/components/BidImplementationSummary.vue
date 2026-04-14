@@ -2,12 +2,12 @@
   <section class="bid-page">
     <h3>中标实施阶段汇总</h3>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="ledgerFile">上传业绩台账文件：</label>
       <input id="ledgerFile" type="file" accept=".xlsx,.xls" @change="onLedgerFileChange" />
     </div>
 
-    <div class="upload-row">
+    <div v-if="!hideUploader" class="upload-row">
       <label for="inHandFile">上传在手合同台账文件：</label>
       <input id="inHandFile" type="file" accept=".xlsx,.xls" @change="onInHandFileChange" />
     </div>
@@ -31,6 +31,12 @@ const resultText = ref(store.state.bidImplementationSummaryResult?.resultText ||
 const errorText = ref(store.state.bidImplementationSummaryResult?.errorText || '')
 const ledgerFileBuffer = ref(null)
 const inHandFileBuffer = ref(null)
+const props = defineProps({
+  ledgerExternalFile: { type: Object, default: null },
+  inHandExternalFile: { type: Object, default: null },
+  generateKey: { type: Number, default: 0 },
+  hideUploader: { type: Boolean, default: false }
+})
 
 watch([resultText, errorText], () => {
   store.commit('setBidImplementationSummaryResult', {
@@ -38,6 +44,16 @@ watch([resultText, errorText], () => {
     errorText: errorText.value
   })
 })
+
+watch(
+  () => props.generateKey,
+  () => {
+    if (!props.ledgerExternalFile || !props.inHandExternalFile) return
+    // 中文注释：先后注入两份文件，复用原有双文件拼装逻辑。
+    onLedgerFileChange({ target: { files: [props.ledgerExternalFile] } })
+    onInHandFileChange({ target: { files: [props.inHandExternalFile] } })
+  }
+)
 
 function onLedgerFileChange(event) {
   const file = event.target.files && event.target.files[0]
