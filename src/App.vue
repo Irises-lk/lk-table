@@ -15,7 +15,7 @@
         <button class="generate-btn" @click="generateAll">
           一键生成全部页面结果
         </button>
-                <button type="button" class="generate-btn" @click="exportWordReport">
+        <button type="button" class="generate-btn" @click="exportWordReport">
           生成 Word 月报
         </button>
       </div>
@@ -32,7 +32,7 @@
         <summary>Word 可用占位符清单</summary>
         <p class="rules-tip">
           中文注释：在 Word 中直接输入花括号占位符，例如
-          {ledgerReportText}，导出时会自动替换为页面结果。
+          {ledgerReportText1}、{ledgerReportText2}、{ledgerReportText3}，导出时会自动替换为页面结果。
         </p>
         <ul class="tag-list">
           <li v-for="tag in wordTagList" :key="tag">{{ tag }}</li>
@@ -104,17 +104,16 @@
               :placeholder="item.placeholder"
             />
           </div>
-        
         </div>
-          <div class="rule-item">
-            <label for="rule-ledger-rows">业绩台账指定行号（固定读取）</label>
-            <input
-              id="rule-ledger-rows"
-              v-model="editableRules.ledgerRawTargetRows"
-              type="text"
-              placeholder="例如：6,10,11,14,17,18,19,20"
-            />
-          </div>
+        <div class="rule-item">
+          <label for="rule-ledger-rows">业绩台账指定行号（固定读取）</label>
+          <input
+            id="rule-ledger-rows"
+            v-model="editableRules.ledgerRawTargetRows"
+            type="text"
+            placeholder="例如：6,10,11,14,17,18,19,20"
+          />
+        </div>
         <div class="rules-actions">
           <button type="button" @click="resetRules">恢复默认规则</button>
         </div>
@@ -133,15 +132,6 @@
         :external-file="matchedFiles.ledger"
         :generate-key="generateKey"
         :hide-uploader="true"
-      />
-    </section>
-
-    <section class="page-block">
-      <LedgerRawTableViewer
-        :external-file="matchedFiles.ledger"
-        :generate-key="generateKey"
-        :hide-uploader="true"
-        :target-rows-text="editableRules.ledgerRawTargetRows"
       />
     </section>
 
@@ -172,14 +162,6 @@
     <section class="page-block">
       <MainInHandContractAmount
         :external-file="matchedFiles.inHand"
-        :generate-key="generateKey"
-        :hide-uploader="true"
-      />
-    </section>
-
-    <section class="page-block">
-      <InHandThreeSheetTableBuilder
-        :external-file="matchedFiles.ledger"
         :generate-key="generateKey"
         :hide-uploader="true"
       />
@@ -236,6 +218,23 @@
     <section class="page-block">
       <OverdueCompressionSummary :auto-build-key="generateKey" />
     </section>
+
+    <section class="page-block">
+      <LedgerRawTableViewer
+        :external-file="matchedFiles.ledger"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+        :target-rows-text="editableRules.ledgerRawTargetRows"
+      />
+    </section>
+    
+    <section class="page-block">
+      <InHandThreeSheetTableBuilder
+        :external-file="matchedFiles.ledger"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
+    </section>
   </div>
 </template>
 
@@ -262,10 +261,34 @@ import OverdueCompressionSummary from "./components/OverdueCompressionSummary.vu
 const selectedFiles = ref([]);
 const generateKey = ref(0);
 const RULE_STORAGE_KEY = "lkgzl_rule_editor_v1";
-const LOCAL_WORD_TEMPLATE_URL = new URL("./template/华东区域经营月报模板.docx", import.meta.url).href;
+const LOCAL_WORD_TEMPLATE_URL = new URL(
+  "./template/华东区域经营月报模板.docx",
+  import.meta.url,
+).href;
 const LEDGER_FIXED_ROW_COUNT = 8;
 const LEDGER_RAW_COL_LETTERS = [
-  "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "AA", "AB"
+  "G",
+  "H",
+  "I",
+  "J",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+  "Q",
+  "R",
+  "S",
+  "T",
+  "U",
+  "V",
+  "W",
+  "X",
+  "Y",
+  "Z",
+  "AA",
+  "AB",
 ];
 const store = useStore();
 const wordStatus = ref("");
@@ -274,7 +297,9 @@ const wordTagList = [
   "lastMonth",
   "nextMonthForecastText",
   "competitorStrictText",
-  "ledgerReportText",
+  "ledgerReportText1",
+  "ledgerReportText2",
+  "ledgerReportText3",
   "overdueReceiptText",
   "stockOverdueText",
   "newOverdueText",
@@ -574,13 +599,19 @@ function buildWordData() {
     "回款数据",
     threeSheetData.receiptRows,
   );
+  // 中文注释：业绩台账总文本按行拆成三段，便于 Word 模板分别摆放。
+  const ledgerReportTextParts = splitLedgerReportText(
+    state.ledgerReportResult?.resultText || "",
+  );
 
   return {
     lastMonth: formatDateCN(),
     nextMonthForecastText: state.nextMonthForecastResult?.resultText || "",
     competitorStrictText:
       state.competitorAnalysisStrictResult?.resultText || "",
-    ledgerReportText: state.ledgerReportResult?.resultText || "",
+    ledgerReportText1: ledgerReportTextParts[0],
+    ledgerReportText2: ledgerReportTextParts[1],
+    ledgerReportText3: ledgerReportTextParts[2],
     overdueReceiptText: state.overdueReceiptMonthlyResult?.resultText || "",
     stockOverdueText: state.eastRegionOverdueStockResult?.resultText || "",
     newOverdueText: state.eastRegionNewOverdueResult?.resultText || "",
@@ -606,6 +637,15 @@ function buildWordData() {
     // competitorAnalysisText: state.competitorAnalysisResult?.resultText || '',
     // excelParserText: state.excelParserResult?.message || ''
   };
+}
+
+function splitLedgerReportText(text) {
+  const lines = String(text == null ? "" : text)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line);
+
+  return [lines[0] || "", lines[1] || "", lines[2] || ""];
 }
 
 function buildWordRows(rows) {
@@ -638,9 +678,15 @@ function buildLedgerRawFixedData(rows) {
   // 中文注释：固定输出8行占位符，不足行或空值统一补空字符串。
   for (let row = 1; row <= LEDGER_FIXED_ROW_COUNT; row += 1) {
     const current = Array.isArray(safeRows[row - 1]) ? safeRows[row - 1] : [];
-    for (let colIndex = 0; colIndex < LEDGER_RAW_COL_LETTERS.length; colIndex += 1) {
+    for (
+      let colIndex = 0;
+      colIndex < LEDGER_RAW_COL_LETTERS.length;
+      colIndex += 1
+    ) {
       const col = LEDGER_RAW_COL_LETTERS[colIndex];
-      result[`ledgerRawR${row}${col}`] = String(current[colIndex] == null ? "" : current[colIndex]);
+      result[`ledgerRawR${row}${col}`] = String(
+        current[colIndex] == null ? "" : current[colIndex],
+      );
     }
   }
 
@@ -778,8 +824,16 @@ function formatDateCompact(date) {
   padding: 0 14px 24px;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
   background:
-    radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.08) 0%, transparent 45%),
-    radial-gradient(circle at 100% 10%, rgba(14, 165, 233, 0.07) 0%, transparent 40%),
+    radial-gradient(
+      circle at 0% 0%,
+      rgba(34, 197, 94, 0.08) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      circle at 100% 10%,
+      rgba(14, 165, 233, 0.07) 0%,
+      transparent 40%
+    ),
     linear-gradient(180deg, #f5faf7 0%, #f8fbff 100%);
 }
 
@@ -787,7 +841,11 @@ function formatDateCompact(date) {
   margin: 0 0 14px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-500) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--brand-600) 0%,
+    var(--brand-500) 100%
+  );
   box-shadow: 0 10px 22px rgba(22, 101, 52, 0.2);
   color: #fff;
   letter-spacing: 0.6px;
@@ -875,6 +933,8 @@ function formatDateCompact(date) {
   line-height: 1.65;
   color: var(--slate-700);
   font-size: 13px;
+  max-height: 100px;
+  overflow-y: auto;
 }
 
 .tag-list {

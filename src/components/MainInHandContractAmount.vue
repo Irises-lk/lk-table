@@ -95,7 +95,7 @@ function onFileChange(event) {
       const amountValue = parseAmount(rawDisplayValue)
       const amountWan = roundHalfUp(amountValue / 10000)
 
-      resultText.value = `华在手主办未拆分项目可执行合同总额${amountWan}万元`
+      resultText.value = `本月中标待签金额xxxx万元，在手主办未拆分项目可执行合同总额${amountWan}万元`
     } catch (error) {
       errorText.value = `解析失败：${error && error.message ? error.message : String(error)}`
     }
