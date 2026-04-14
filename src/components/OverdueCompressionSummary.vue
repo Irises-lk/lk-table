@@ -138,11 +138,4 @@ function persistResult() {
   align-items: center;
   gap: 8px;
 }
-
-.result-panel {
-  padding: 12px;
-  border: 1px solid #ddd;
-  background: #fafafa;
-  line-height: 1.8;
-}
 </style>

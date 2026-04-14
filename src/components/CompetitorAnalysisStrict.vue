@@ -288,19 +288,4 @@ function normalizeHeaderText(value) {
   gap: 8px;
   flex-wrap: wrap;
 }
-
-.result-panel {
-  padding: 12px;
-  border: 1px solid #c8e6c9;
-  background: #f1fbf3;
-  color: #146b2e;
-  font-weight: 700;
-}
-
-.error-panel {
-  padding: 12px;
-  border: 1px solid #ffcdd2;
-  background: #fff5f5;
-  color: #a41515;
-}
 </style>

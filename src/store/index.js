@@ -32,7 +32,12 @@ const store = createStore({
       bidImplementationSummaryResult: persisted.bidImplementationSummaryResult || { resultText: '', errorText: '' },
       outboundProjectFollowupResult: persisted.outboundProjectFollowupResult || { resultText: '', errorText: '' },
       competitorAnalysisStrictResult: persisted.competitorAnalysisStrictResult || { resultText: '', errorText: '' },
-      nextMonthForecastResult: persisted.nextMonthForecastResult || { resultText: '', errorText: '' }
+      nextMonthForecastResult: persisted.nextMonthForecastResult || { resultText: '', errorText: '' },
+      inHandThreeSheetTableResult: persisted.inHandThreeSheetTableResult || {
+        statusText: '',
+        errorText: '',
+        data: { targetMonth: '', newSignRows: [], revenueRows: [], receiptRows: [] }
+      }
     }
   },
   mutations: {
@@ -121,6 +126,15 @@ const store = createStore({
         resultText: payload && payload.resultText ? payload.resultText : '',
         errorText: payload && payload.errorText ? payload.errorText : ''
       }
+    },
+    setInHandThreeSheetTableResult(state, payload) {
+      state.inHandThreeSheetTableResult = {
+        statusText: payload && payload.statusText ? payload.statusText : '',
+        errorText: payload && payload.errorText ? payload.errorText : '',
+        data: payload && payload.data
+          ? payload.data
+          : { targetMonth: '', newSignRows: [], revenueRows: [], receiptRows: [] }
+      }
     }
   }
 })
@@ -141,7 +155,8 @@ store.subscribe((_mutation, state) => {
     bidImplementationSummaryResult: state.bidImplementationSummaryResult,
     outboundProjectFollowupResult: state.outboundProjectFollowupResult,
     competitorAnalysisStrictResult: state.competitorAnalysisStrictResult,
-    nextMonthForecastResult: state.nextMonthForecastResult
+    nextMonthForecastResult: state.nextMonthForecastResult,
+    inHandThreeSheetTableResult: state.inHandThreeSheetTableResult
   }
 
   try {

@@ -5,19 +5,28 @@
     <section class="upload-panel">
       <div class="upload-row">
         <label for="allFiles">一次性上传全部源文件（支持多选）：</label>
-        <input id="allFiles" type="file" accept=".xlsx,.xls" multiple @change="onAllFilesChange" />
+        <input
+          id="allFiles"
+          type="file"
+          accept=".xlsx,.xls"
+          multiple
+          @change="onAllFilesChange"
+        />
         <button class="generate-btn" @click="generateAll">
           一键生成全部页面结果
         </button>
-      </div>
-
-      <div class="upload-row word-row">
-        <label for="wordTemplate">上传 Word 模板（.docx）：</label>
-        <input id="wordTemplate" type="file" accept=".docx" @change="onWordTemplateChange" />
-        <button type="button" class="generate-btn" @click="exportWordReport">
+                <button type="button" class="generate-btn" @click="exportWordReport">
           生成 Word 月报
         </button>
       </div>
+
+      <!-- <div class="upload-row word-row">
+        <label>Word 模板来源：</label>
+        <span class="template-path">src/template/华东区域经营月报模板.docx</span>
+        <button type="button" class="generate-btn" @click="exportWordReport">
+          生成 Word 月报
+        </button>
+      </div> -->
       <div v-if="wordStatus" class="word-status">{{ wordStatus }}</div>
       <details class="word-tags">
         <summary>Word 可用占位符清单</summary>
@@ -30,13 +39,35 @@
         </ul>
       </details>
 
-      <details class="word-preview" open>
+      <details class="word-tags">
+        <summary>三表表格模板写法（真实表格循环）</summary>
+        <p class="rules-tip">
+          中文注释：在 Word
+          表格中，先建好表头，再在“数据行”7个单元格中按以下占位符放置，生成时会自动按行扩展。
+        </p>
+        <pre class="preview-value">
+新签数据行：
+{#inHandThreeSheetNewSignRows}{serial}{customerName}{projectName}{owner}{coOwner}{product}{amount}{/inHandThreeSheetNewSignRows}
+
+营收数据行：
+{#inHandThreeSheetRevenueRows}{serial}{customerName}{projectName}{owner}{coOwner}{product}{amount}{/inHandThreeSheetRevenueRows}
+
+回款数据行：
+{#inHandThreeSheetReceiptRows}{serial}{customerName}{projectName}{owner}{coOwner}{product}{amount}{/inHandThreeSheetReceiptRows}</pre
+        >
+      </details>
+
+      <details class="word-preview">
         <summary>占位符内容预览</summary>
         <p class="rules-tip">
           中文注释：这里展示每个占位符当前会写入 Word 的实际内容。
         </p>
         <div class="preview-grid">
-          <div v-for="item in wordPreviewList" :key="item.key" class="preview-card">
+          <div
+            v-for="item in wordPreviewList"
+            :key="item.key"
+            class="preview-card"
+          >
             <div class="preview-key">{{ item.key }}</div>
             <pre class="preview-value">{{ item.value || "（空）" }}</pre>
           </div>
@@ -52,8 +83,12 @@
         <div class="rules-grid">
           <div v-for="item in ruleMeta" :key="item.key" class="rule-item">
             <label :for="`rule-${item.key}`">{{ item.title }}</label>
-            <textarea :id="`rule-${item.key}`" v-model="editableRules[item.key]" rows="2"
-              :placeholder="item.placeholder" />
+            <textarea
+              :id="`rule-${item.key}`"
+              v-model="editableRules[item.key]"
+              rows="2"
+              :placeholder="item.placeholder"
+            />
           </div>
         </div>
         <div class="rules-actions">
@@ -70,56 +105,99 @@
     </section>
 
     <section class="page-block">
-      <LedgerReportGenerator :external-file="matchedFiles.ledger" :generate-key="generateKey" :hide-uploader="true" />
+      <LedgerReportGenerator
+        :external-file="matchedFiles.ledger"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <OverdueReceiptMonthlyReport :external-file="matchedFiles.ledger" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <OverdueReceiptMonthlyReport
+        :external-file="matchedFiles.ledger"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <EastRegionOverdueStock :external-file="matchedFiles.stockOverdue" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <EastRegionOverdueStock
+        :external-file="matchedFiles.stockOverdue"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <EastRegionNewOverdue :external-file="matchedFiles.newOverdue" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <EastRegionNewOverdue
+        :external-file="matchedFiles.newOverdue"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <MainInHandContractAmount :external-file="matchedFiles.inHand" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <MainInHandContractAmount
+        :external-file="matchedFiles.inHand"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <ProjectTrackingSummary :external-file="matchedFiles.tracking" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <InHandThreeSheetTableBuilder
+        :external-file="matchedFiles.ledger"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <StageDynamicsSummary :external-file="matchedFiles.stageDynamics" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <ProjectTrackingSummary
+        :external-file="matchedFiles.tracking"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <BidImplementationSummary :ledger-external-file="matchedFiles.ledger" :in-hand-external-file="matchedFiles.inHand"
-        :generate-key="generateKey" :hide-uploader="true" />
+      <StageDynamicsSummary
+        :external-file="matchedFiles.stageDynamics"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <OutboundProjectFollowup :external-file="matchedFiles.outbound" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <BidImplementationSummary
+        :ledger-external-file="matchedFiles.ledger"
+        :in-hand-external-file="matchedFiles.inHand"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
-      <CompetitorAnalysisStrict :external-file="matchedFiles.competitor" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <OutboundProjectFollowup
+        :external-file="matchedFiles.outbound"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
+    </section>
+
+    <section class="page-block">
+      <CompetitorAnalysisStrict
+        :external-file="matchedFiles.competitor"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
     <section class="page-block">
-      <NextMonthForecastSummary :external-file="matchedFiles.forecast" :generate-key="generateKey"
-        :hide-uploader="true" />
+      <NextMonthForecastSummary
+        :external-file="matchedFiles.forecast"
+        :generate-key="generateKey"
+        :hide-uploader="true"
+      />
     </section>
 
     <section class="page-block">
@@ -139,6 +217,7 @@ import OverdueReceiptMonthlyReport from "./components/OverdueReceiptMonthlyRepor
 import EastRegionOverdueStock from "./components/EastRegionOverdueStock.vue";
 import EastRegionNewOverdue from "./components/EastRegionNewOverdue.vue";
 import MainInHandContractAmount from "./components/MainInHandContractAmount.vue";
+import InHandThreeSheetTableBuilder from "./components/InHandThreeSheetTableBuilder.vue";
 import ProjectTrackingSummary from "./components/ProjectTrackingSummary.vue";
 import StageDynamicsSummary from "./components/StageDynamicsSummary.vue";
 import BidImplementationSummary from "./components/BidImplementationSummary.vue";
@@ -149,8 +228,8 @@ import OverdueCompressionSummary from "./components/OverdueCompressionSummary.vu
 const selectedFiles = ref([]);
 const generateKey = ref(0);
 const RULE_STORAGE_KEY = "lkgzl_rule_editor_v1";
+const LOCAL_WORD_TEMPLATE_URL = new URL("./template/华东区域经营月报模板.docx", import.meta.url).href;
 const store = useStore();
-const wordTemplateFile = ref(null);
 const wordStatus = ref("");
 
 const wordTagList = [
@@ -167,6 +246,14 @@ const wordTagList = [
   "bidImplementationText",
   "outboundFollowupText",
   "overdueCompressionText",
+  // 表格
+  "inHandThreeSheetTableText",
+  "inHandThreeSheetNewSignTableText",
+  "inHandThreeSheetRevenueTableText",
+  "inHandThreeSheetReceiptTableText",
+  "inHandThreeSheetNewSignRows",
+  "inHandThreeSheetRevenueRows",
+  "inHandThreeSheetReceiptRows",
   // 'competitorAnalysisText',
   // 'excelParserText'
 ];
@@ -176,7 +263,7 @@ const wordPreviewList = computed(() => {
   return wordTagList.map((key) => {
     return {
       key,
-      value: data[key] == null ? "" : String(data[key]),
+      value: formatWordPreviewValue(data[key]),
     };
   });
 });
@@ -392,20 +479,14 @@ function resetRules() {
   editableRules.value = { ...defaultEditableRules };
 }
 
-function onWordTemplateChange(event) {
-  const file = event.target.files && event.target.files[0];
-  wordTemplateFile.value = file || null;
-  wordStatus.value = file ? `已选择模板：${file.name}` : "";
-}
-
 async function exportWordReport() {
-  if (!wordTemplateFile.value) {
-    wordStatus.value = "请先上传 .docx 模板文件。";
-    return;
-  }
-
   try {
-    const arrayBuffer = await wordTemplateFile.value.arrayBuffer();
+    const response = await fetch(LOCAL_WORD_TEMPLATE_URL);
+    if (!response.ok) {
+      throw new Error(`本地模板读取失败：${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
     const zip = new PizZip(arrayBuffer);
     const doc = new Docxtemplater(zip, {
       paragraphLoop: true,
@@ -430,6 +511,26 @@ async function exportWordReport() {
 
 function buildWordData() {
   const state = store.state;
+  const threeSheetData = state.inHandThreeSheetTableResult?.data || {
+    targetMonth: "",
+    newSignRows: [],
+    revenueRows: [],
+    receiptRows: [],
+  };
+
+  const newSignText = buildThreeSheetSectionText(
+    "新签数据",
+    threeSheetData.newSignRows,
+  );
+  const revenueText = buildThreeSheetSectionText(
+    "营收数据",
+    threeSheetData.revenueRows,
+  );
+  const receiptText = buildThreeSheetSectionText(
+    "回款数据",
+    threeSheetData.receiptRows,
+  );
+
   return {
     lastMonth: formatDateCN(),
     nextMonthForecastText: state.nextMonthForecastResult?.resultText || "",
@@ -447,9 +548,83 @@ function buildWordData() {
     outboundFollowupText: state.outboundProjectFollowupResult?.resultText || "",
     overdueCompressionText:
       state.overdueCompressionSummaryResult?.resultText || "",
+    inHandThreeSheetTableText: [newSignText, revenueText, receiptText]
+      .filter((item) => item)
+      .join("\n\n"),
+    inHandThreeSheetNewSignTableText: newSignText,
+    inHandThreeSheetRevenueTableText: revenueText,
+    inHandThreeSheetReceiptTableText: receiptText,
+    inHandThreeSheetNewSignRows: buildWordRows(threeSheetData.newSignRows),
+    inHandThreeSheetRevenueRows: buildWordRows(threeSheetData.revenueRows),
+    inHandThreeSheetReceiptRows: buildWordRows(threeSheetData.receiptRows),
     // competitorAnalysisText: state.competitorAnalysisResult?.resultText || '',
     // excelParserText: state.excelParserResult?.message || ''
   };
+}
+
+function buildWordRows(rows) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  return safeRows.map((row) => ({
+    serial: String(row.serial == null ? "" : row.serial),
+    customerName: String(row.customerName == null ? "" : row.customerName),
+    projectName: String(row.projectName == null ? "" : row.projectName),
+    owner: String(row.owner == null ? "" : row.owner),
+    coOwner: String(row.coOwner == null ? "" : row.coOwner),
+    product: String(row.product == null ? "" : row.product),
+    amount: String(row.amount == null ? "" : row.amount),
+  }));
+}
+
+function formatWordPreviewValue(value) {
+  if (value == null) return "";
+  if (Array.isArray(value)) {
+    if (!value.length) return "[]";
+    return JSON.stringify(value, null, 2);
+  }
+  if (typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
+  return String(value);
+}
+
+function buildThreeSheetSectionText(title, rows) {
+  const header = [
+    "序号",
+    "客户名称",
+    "项目名称",
+    "对应责任方",
+    "对应协办方",
+    "产品名称和数量",
+    "对应金额",
+  ];
+
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const lines = [];
+  lines.push(title);
+  lines.push(header.join("\t"));
+
+  if (!safeRows.length) {
+    lines.push("（无数据）");
+    return lines.join("\n");
+  }
+
+  for (const row of safeRows) {
+    lines.push(
+      [
+        row.serial,
+        row.customerName,
+        row.projectName,
+        row.owner,
+        row.coOwner,
+        row.product,
+        row.amount,
+      ]
+        .map((value) => String(value == null ? "" : value))
+        .join("\t"),
+    );
+  }
+
+  return lines.join("\n");
 }
 
 function downloadBlob(blob, fileName) {
@@ -482,28 +657,44 @@ function formatDateCompact(date) {
 
 <style scoped>
 .app-shell {
-  max-width: 1080px;
-  margin: 24px auto;
-  padding: 0 12px 20px;
+  --brand-700: #14532d;
+  --brand-600: #166534;
+  --brand-500: #1f9d65;
+  --teal-600: #0f766e;
+  --teal-500: #0ea5a0;
+  --slate-900: #0f172a;
+  --slate-700: #334155;
+  --slate-500: #64748b;
+  --line: #dbe3ee;
+  --soft-bg: #f8fafc;
+  --card-bg: #ffffff;
+  max-width: 1500px;
+  margin: 22px auto;
+  padding: 0 14px 24px;
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
-  background: linear-gradient(180deg, #f6faf7 0%, #f8f9fc 100%);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.08) 0%, transparent 45%),
+    radial-gradient(circle at 100% 10%, rgba(14, 165, 233, 0.07) 0%, transparent 40%),
+    linear-gradient(180deg, #f5faf7 0%, #f8fbff 100%);
 }
 
 .app-shell h2 {
   margin: 0 0 14px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #166534 0%, #1f9d65 100%);
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--brand-600) 0%, var(--brand-500) 100%);
+  box-shadow: 0 10px 22px rgba(22, 101, 52, 0.2);
   color: #fff;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  font-size: 22px;
 }
 
 .upload-panel {
   padding: 14px;
-  border: 1px solid #d8e7de;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 6px 18px rgba(17, 56, 36, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 8px 26px rgba(15, 23, 42, 0.06);
   margin-bottom: 18px;
 }
 
@@ -518,44 +709,57 @@ function formatDateCompact(date) {
   margin-top: 10px;
 }
 
+.template-path {
+  padding: 7px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: var(--soft-bg);
+  color: var(--slate-700);
+  font-size: 13px;
+}
+
 .word-status {
-  margin-top: 8px;
-  color: #0f5132;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border: 1px solid #cce8da;
+  border-radius: 8px;
+  background: #f1fbf4;
+  color: #166534;
   font-size: 13px;
 }
 
 .word-tags {
-  margin-top: 8px;
-  border: 1px solid #dbe5f0;
-  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   background: #f8fbff;
-  padding: 8px;
+  padding: 10px;
 }
 
 .word-preview {
-  margin-top: 8px;
-  border: 1px solid #dbe5f0;
-  border-radius: 8px;
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   background: #ffffff;
-  padding: 8px;
+  padding: 10px;
 }
 
 .preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 10px;
 }
 
 .preview-card {
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  padding: 8px;
+  border-radius: 10px;
+  background: #fbfdff;
+  padding: 10px;
 }
 
 .preview-key {
   font-weight: 700;
-  color: #0f172a;
+  color: var(--slate-900);
   margin-bottom: 6px;
 }
 
@@ -563,39 +767,45 @@ function formatDateCompact(date) {
   margin: 0;
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.6;
-  color: #334155;
+  line-height: 1.65;
+  color: var(--slate-700);
+  font-size: 13px;
 }
 
 .tag-list {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   padding-left: 18px;
-  column-count: 2;
+  column-count: 3;
   column-gap: 20px;
 }
 
 .rules-config {
   margin-top: 10px;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--line);
+  border-radius: 10px;
   background: #fff;
-  padding: 8px;
+  padding: 10px;
 }
 
-.rules-config summary {
+.rules-config summary,
+.word-tags summary,
+.word-preview summary {
   cursor: pointer;
   font-weight: 600;
+  color: var(--slate-900);
 }
 
 .rules-tip {
   margin: 8px 0;
-  color: #666;
+  color: var(--slate-500);
   font-size: 13px;
+  line-height: 1.6;
 }
 
 .rules-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 10px;
 }
 
 .rule-item {
@@ -607,8 +817,12 @@ function formatDateCompact(date) {
 .rule-item textarea {
   width: 100%;
   resize: vertical;
-  min-height: 52px;
-  padding: 6px;
+  min-height: 56px;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .rules-actions {
@@ -616,27 +830,31 @@ function formatDateCompact(date) {
 }
 
 .generate-btn {
-  margin-top: 10px;
+  margin-top: 6px;
   min-width: 210px;
-  padding: 8px 16px;
+  padding: 9px 16px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   color: #fff;
-  background: linear-gradient(135deg, #0f766e 0%, #0ea5a0 100%);
+  background: linear-gradient(135deg, var(--teal-600) 0%, var(--teal-500) 100%);
+  box-shadow: 0 8px 18px rgba(14, 116, 110, 0.28);
   cursor: pointer;
 }
 
 .generate-btn:hover {
-  filter: brightness(1.05);
+  transform: translateY(-1px);
+  filter: brightness(1.06);
 }
 
 .match-list {
-  margin-top: 10px;
+  margin-top: 12px;
   padding-left: 18px;
+  line-height: 1.75;
 }
 
 .item-title {
-  color: #333;
+  color: var(--slate-900);
+  font-weight: 600;
 }
 
 .ok {
@@ -650,19 +868,19 @@ function formatDateCompact(date) {
 .page-block {
   margin-bottom: 14px;
   padding: 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
   background: #fff;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.05);
 }
 
 /* 中文注释：使用深度选择器统一子组件页面视觉，减少逐个组件维护成本。 */
 .page-block :deep(h3) {
   margin: 0 0 10px;
   padding-left: 10px;
-  border-left: 4px solid #0ea5a0;
+  border-left: 4px solid var(--teal-500);
   font-size: 18px;
-  color: #0f172a;
+  color: var(--slate-900);
 }
 
 .page-block :deep(.desc) {
@@ -707,6 +925,7 @@ function formatDateCompact(date) {
   background: #f3fbf7;
   color: #14532d;
   line-height: 1.8;
+  font-weight: 700;
 }
 
 .page-block :deep(.error-panel),
@@ -717,6 +936,7 @@ function formatDateCompact(date) {
   background: #fef2f2;
   color: #991b1b;
   line-height: 1.8;
+  font-weight: 700;
 }
 
 .page-block :deep(.content),
@@ -724,5 +944,40 @@ function formatDateCompact(date) {
 .page-block :deep(.result-only) {
   margin-top: 6px;
   white-space: pre-wrap;
+}
+
+@media (max-width: 992px) {
+  .tag-list {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    margin: 14px auto;
+    padding: 0 10px 18px;
+  }
+
+  .app-shell h2 {
+    font-size: 18px;
+    padding: 10px 12px;
+  }
+
+  .upload-panel {
+    padding: 10px;
+  }
+
+  .generate-btn {
+    min-width: 160px;
+  }
+
+  .preview-grid,
+  .rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tag-list {
+    column-count: 1;
+  }
 }
 </style>
