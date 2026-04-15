@@ -4,7 +4,7 @@
 
     <section class="upload-panel">
       <div class="upload-row">
-        <label for="allFiles">一次性上传全部源文件（支持多选）：</label>
+        <label for="allFiles">上传源文件（支持多选，可多次追加）：</label>
         <input
           id="allFiles"
           type="file"
@@ -478,7 +478,26 @@ const fileMatchView = computed(() => {
 
 function onAllFilesChange(event) {
   const files = Array.from((event.target && event.target.files) || []);
-  selectedFiles.value = files;
+  // 中文注释：多次选择文件时采用“追加”策略，解决不同文件夹分批选择的场景。
+  const mergedMap = new Map();
+
+  for (const file of selectedFiles.value) {
+    mergedMap.set(buildFileIdentity(file), file);
+  }
+  for (const file of files) {
+    mergedMap.set(buildFileIdentity(file), file);
+  }
+
+  selectedFiles.value = Array.from(mergedMap.values());
+
+  // 中文注释：重置 input 的 value，允许用户下一次继续选择同一批文件时也能触发 change 事件。
+  if (event.target) {
+    event.target.value = "";
+  }
+}
+
+function buildFileIdentity(file) {
+  return [file.name, file.size, file.lastModified].join("__");
 }
 
 function generateAll() {
